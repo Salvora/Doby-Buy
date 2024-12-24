@@ -6,8 +6,12 @@
 // @grant       GM_getResourceText
 // @grant       GM_setValue
 // @grant       GM_getValue
-// @resource    customCSS https://github.com/Salvora/Doby-Buy/raw/refs/heads/main/styles.css?v=1.0.0
+// @resource    customCSS https://raw.githubusercontent.com/Salvora/Doby-Buy/refs/heads/main/styles.css?token=GHSAT0AAAAAACXMCGYVUQ3J5SFFKYBJL2JWZ3KUR7Q&v=1.0.0
 // @author      Salvora
+// @homepageURL https://github.com/Salvora/Doby-Buy
+// @updateURL   https://raw.githubusercontent.com/Salvora/Doby-Buy/refs/heads/main/Doby-Buy.user.js?token=GHSAT0AAAAAAC4LMOFYEMQGFDDFL3GFBLOOZ3KUW2Q
+// @downloadURL https://raw.githubusercontent.com/Salvora/Doby-Buy/refs/heads/main/Doby-Buy.user.js?token=GHSAT0AAAAAAC4LMOFYEMQGFDDFL3GFBLOOZ3KUW2Q
+// @supportURL  https://github.com/Salvora/Doby-Buy/issues
 // @description Userscript For Doby Translations
 // @match       https://dobytranslations.com/series/*
 // @license     GPL-3.0-or-later
