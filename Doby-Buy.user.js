@@ -225,7 +225,14 @@
     }
   }
 
+  /**
+   * Initializes the script by finding premium chapters and adding the unlock button.
+   */
+  function init() {
+    findPremium();
+    unlockCheckedButton();
+  }
+
   // Initialize the script
-  findPremium();
-  unlockCheckedButton();
+  init();
 })();
