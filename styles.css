@@ -1,18 +1,29 @@
 /* styles.css */
 .button-container {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-  }
-  
-  .bookmark-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .premium-checkbox {
-    margin-right: 5px;
-    width: 20px;
-    height: 20px;
-  }
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.bookmark-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.premium-checkbox {
+  margin-right: 5px;
+  width: 20px;
+  height: 20px;
+}
+
+/* Add this to your styles.css file */
+@keyframes clickAnimation {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+.click-animation {
+  animation: clickAnimation 0.2s ease-in-out;
+}

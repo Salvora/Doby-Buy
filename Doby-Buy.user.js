@@ -23,6 +23,13 @@
 
   GM_addStyle(GM_getResourceText('customCSS'));
 
+  /**
+   * Sends a request to the specified URL with the given options and timeout.
+   * @param {string} url - The URL to send the request to.
+   * @param {Object} [options={}] - The options for the fetch request.
+   * @param {number} [timeout=10000] - The timeout for the request in milliseconds.
+   * @returns {Promise<Response>} - A promise that resolves to the response of the request.
+   */
   async function sendRequest(url, options = {}, timeout = 10000) {
     const { signal, ...fetchOptions } = options;
 
@@ -34,6 +41,10 @@
     ]);
   }
 
+  /**
+   * Finds premium chapters and adds checkboxes to them.
+   * Clicking anywhere other than the title will toggle the checkbox.
+   */
   function findPremium() {
     const chapterList = document.querySelector('.eplister.eplisterfull');
     const coinElements = chapterList.querySelectorAll('li:has(.premium-icon)');
@@ -41,14 +52,33 @@
 
     coinElements.forEach(item => {
       const eplNum = item.querySelector('.epl-num');
+      const eplTitle = item.querySelector('.epl-title');
+      const link = item.querySelector('a');
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.className = 'premium-checkbox';
 
       eplNum.parentNode.insertBefore(checkbox, eplNum.nextSibling);
+
+      // Prevent default link behavior
+      link.addEventListener('click', (e) => {
+        if (!eplTitle.contains(e.target)) {
+          e.preventDefault();
+        }
+      });
+
+      // Add event listener for checkbox toggle
+      item.addEventListener('click', (event) => {
+        if (!eplTitle.contains(event.target)) {
+          checkbox.checked = !checkbox.checked;
+        }
+      });
     });
   }
 
+  /**
+   * Adds the "Unlock Checked" button next to the "Bookmarked" button.
+   */
   function unlockCheckedButton() {
     const bookmarkElement = document.querySelector('.serbookmark .bookmark');
     const followedElement = document.querySelector('.serbookmark .bmc');
@@ -64,6 +94,10 @@
       unlockButton.className = 'bookmark marked';
       unlockButton.innerHTML = '<i class="fas fa-unlock" aria-hidden="true"></i> Unlock Checked';
       unlockButton.addEventListener('click', () => {
+        unlockButton.classList.add('click-animation');
+        setTimeout(() => {
+          unlockButton.classList.remove('click-animation');
+        }, 200);
         unlockChecked();
       });
 
@@ -77,6 +111,9 @@
     }
   }
 
+  /**
+   * Unlocks the selected premium chapters.
+   */
   async function unlockChecked() {
     const token = await findToken();
     if (!token) {
@@ -108,6 +145,13 @@
     console.log('All unlock requests have been processed.');
   }
 
+  /**
+   * Unlocks a single chapter.
+   * @param {string} URL - The URL of the chapter to unlock.
+   * @param {string} token - The token for unlocking the chapter.
+   * @param {string} postID - The ID of the post to unlock.
+   * @returns {Promise<boolean>} - A promise that resolves to true if the chapter was unlocked successfully, otherwise false.
+   */
   async function unlockChapter(URL, token, postID) {
     const postData = new URLSearchParams({
       action: "mycred-buy-content",
@@ -147,6 +191,10 @@
     }
   }
 
+  /**
+   * Finds a token by randomly selecting a premium chapter and extracting the token from the response.
+   * @returns {Promise<string|null>} - A promise that resolves to the token if found, otherwise null.
+   */
   async function findToken() {
     const chapterList = document.querySelector('.eplister.eplisterfull');
     const premiumChapters = chapterList.querySelectorAll('li:has(.premium-icon)');
@@ -177,10 +225,7 @@
     }
   }
 
-  function init() {
-    findPremium();
-    unlockCheckedButton();
-  }
-
-  init();
+  // Initialize the script
+  findPremium();
+  unlockCheckedButton();
 })();
