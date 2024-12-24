@@ -1,0 +1,18 @@
+/* styles.css */
+.button-container {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  
+  .bookmark-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .premium-checkbox {
+    margin-right: 5px;
+    width: 20px;
+    height: 20px;
+  }
