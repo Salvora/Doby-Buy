@@ -93,12 +93,12 @@
       const unlockButton = document.createElement('div');
       unlockButton.className = 'bookmark marked';
       unlockButton.innerHTML = '<i class="fas fa-unlock" aria-hidden="true"></i> Unlock Checked';
-      unlockButton.addEventListener('click', () => {
+      unlockButton.addEventListener("click", async () => {
         unlockButton.classList.add('click-animation');
         setTimeout(() => {
           unlockButton.classList.remove('click-animation');
         }, 200);
-        unlockChecked();
+        await unlockChecked();
       });
 
       bookmarkElement.parentNode.insertBefore(buttonContainer, bookmarkElement);
