@@ -6,7 +6,7 @@
 // @grant       GM_getResourceText
 // @grant       GM_setValue
 // @grant       GM_getValue
-// @resource    customCSS https://raw.githubusercontent.com/Salvora/Doby-Buy/refs/heads/main/styles.css?v=1.0.0
+// @resource    customCSS https://github.com/Salvora/Doby-Buy/raw/refs/heads/main/styles.css?v=1.0.0
 // @author      Salvora
 // @homepageURL https://github.com/Salvora/Doby-Buy
 // @updateURL   https://github.com/Salvora/Doby-Buy/raw/refs/heads/main/Doby-Buy.user.js
@@ -20,8 +20,15 @@
 
 (function () {
   "use strict";
+  let isInitialized = false;
 
-  GM_addStyle(GM_getResourceText('customCSS'));
+  // Apply custom CSS
+  try {
+    GM_addStyle(GM_getResourceText('customCSS'));
+    console.log("Custom CSS applied successfully.");
+  } catch (e) {
+    console.error("Failed to apply custom CSS:", e);
+  }
 
   /**
    * Sends a request to the specified URL with the given options and timeout.
@@ -47,10 +54,18 @@
    */
   function findPremium() {
     const chapterList = document.querySelector('.eplister.eplisterfull');
+    if (!chapterList) {
+      console.warn("Chapter list not found.");
+      return;
+    }
+
     const coinElements = chapterList.querySelectorAll('li:has(.premium-icon)');
     console.log(`Found ${coinElements.length} coin elements`);
 
     coinElements.forEach(item => {
+      // Check if checkbox already exists
+      if (item.querySelector('.premium-checkbox')) return;
+
       const eplNum = item.querySelector('.epl-num');
       const eplTitle = item.querySelector('.epl-title');
       const link = item.querySelector('a');
@@ -60,7 +75,7 @@
 
       eplNum.parentNode.insertBefore(checkbox, eplNum.nextSibling);
 
-      // Prevent default link behavior
+      // Prevent default link behavior when clicking outside the title
       link.addEventListener('click', (e) => {
         if (!eplTitle.contains(e.target)) {
           e.preventDefault();
@@ -69,7 +84,7 @@
 
       // Add event listener for checkbox toggle
       item.addEventListener('click', (event) => {
-        if (!eplTitle.contains(event.target)) {
+        if (!eplTitle.contains(event.target) && event.target !== checkbox) {
           checkbox.checked = !checkbox.checked;
         }
       });
@@ -83,7 +98,11 @@
     const bookmarkElement = document.querySelector('.serbookmark .bookmark');
     const followedElement = document.querySelector('.serbookmark .bmc');
 
-    if (bookmarkElement) {
+    if (!bookmarkElement) {
+      console.warn("Bookmark element not found.");
+      return;
+    }
+
       const buttonContainer = document.createElement('div');
       buttonContainer.className = 'button-container';
 
@@ -108,7 +127,8 @@
       }
       buttonContainer.appendChild(bookmarkWrapper);
       buttonContainer.appendChild(unlockButton);
-    }
+      console.log("Unlock Checked button added to the DOM.");
+
   }
 
   /**
@@ -197,6 +217,10 @@
    */
   async function findToken() {
     const chapterList = document.querySelector('.eplister.eplisterfull');
+    if (!chapterList) {
+      console.error('Chapter list not found.');
+      return null;
+    }    
     const premiumChapters = chapterList.querySelectorAll('li:has(.premium-icon)');
 
     if (premiumChapters.length === 0) {
@@ -225,14 +249,69 @@
     }
   }
 
+
   /**
-   * Initializes the script by finding premium chapters and adding the unlock button.
+   * Debounces function calls
    */
-  function init() {
-    findPremium();
-    unlockCheckedButton();
+  function debounce(func, wait) {
+    let timeout;
+    return (...args) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
   }
 
-  // Initialize the script
+  /**
+   * Removes existing elements to prevent duplicates
+   */
+  function cleanup() {
+    document.querySelectorAll('.premium-checkbox').forEach(el => el.remove());
+    document.querySelectorAll('.button-container').forEach(el => el.remove());
+  }
+
+  /**
+   * Observes DOM changes for dynamic content
+   */
+  function observeDOMChanges() {
+    const observer = new MutationObserver(
+      debounce((mutations) => {
+        // Check if relevant nodes were added/removed
+        const hasRelevantChanges = mutations.some(mutation => {
+          return Array.from(mutation.addedNodes).some(node => 
+            node.nodeType === 1 && (
+              node.matches('.eplister.eplisterfull') ||
+              node.matches('.serbookmark')
+            )
+          );
+        });
+
+        if (hasRelevantChanges) {
+          isInitialized = false;
+          cleanup();
+          init();
+        }
+      }, 300)
+    );
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  /**
+   * Initializes the script
+   */
+  function init() {
+    if (isInitialized) return;
+    
+    findPremium();
+    unlockCheckedButton();
+    isInitialized = true;
+  }
+
+
+  // Initialize script and observe changes
   init();
+  observeDOMChanges();
 })();
