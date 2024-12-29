@@ -110,8 +110,9 @@
       bookmarkWrapper.className = 'bookmark-wrapper';
 
       const unlockButton = document.createElement('div');
-      unlockButton.className = 'bookmark marked';
-      unlockButton.innerHTML = '<i class="fas fa-unlock" aria-hidden="true"></i> Unlock Checked';
+      unlockButton.className = 'bookmark';
+      unlockButton.id = 'unlock-checked-button';
+      unlockButton.innerHTML = '<i class="fas fa-unlock" aria-hidden="true"></i> <span class="button-text">Unlock Checked</span>';
       unlockButton.addEventListener("click", async () => {
         unlockButton.classList.add('click-animation');
         setTimeout(() => {
@@ -135,34 +136,47 @@
    * Unlocks the selected premium chapters.
    */
   async function unlockChecked() {
-    const token = await findToken();
-    if (!token) {
-      console.error('Token not found.');
-      return;
-    }
-
-    const checkedBoxes = document.querySelectorAll('.premium-checkbox:checked');
-    if (checkedBoxes.length === 0) {
-      console.log('No chapters selected.');
-      return;
-    }
-
-    const unlockPromises = Array.from(checkedBoxes).map(async checkbox => {
-      const chapterItem = checkbox.closest('li');
-      const postID = chapterItem.getAttribute('data-id');
-      const chapterLink = chapterItem.querySelector('a').href;
-
-      console.log(`Unlocking chapter ${postID}...`);
-      const success = await unlockChapter(chapterLink, token, postID);
-      if (success) {
-        console.log(`Chapter ${postID} unlocked successfully.`);
-      } else {
-        console.error(`Failed to unlock chapter ${postID}.`);
+    let checkedBoxes;
+    try {
+      const token = await findToken();
+      if (!token) {
+        console.error('Token not found.');
+        return;
       }
-    });
 
-    await Promise.all(unlockPromises);
-    console.log('All unlock requests have been processed.');
+      checkedBoxes = document.querySelectorAll('.premium-checkbox:checked');
+      if (checkedBoxes.length === 0) {
+        console.log('No chapters selected.');
+        return;
+      }
+
+      const unlockPromises = Array.from(checkedBoxes).map(async checkbox => {
+        const chapterItem = checkbox.closest('li');
+        const postID = chapterItem.getAttribute('data-id');
+        const chapterLink = chapterItem.querySelector('a').href;
+
+        console.log(`Unlocking chapter ${postID}...`);
+        const success = await unlockChapter(chapterLink, token, postID);
+        if (success) {
+          console.log(`Chapter ${postID} unlocked successfully.`);
+        } else {
+          console.error(`Failed to unlock chapter ${postID}.`);
+        }
+      });
+
+      await Promise.all(unlockPromises);
+      console.log('All unlock requests have been processed.');
+    } catch (error) {
+      console.error('An error occurred during the unlock process:', error);
+    } finally {
+      // Uncheck all checkboxes
+      if (checkedBoxes) {
+        checkedBoxes.forEach(checkbox => {
+          checkbox.checked = false;
+        });
+      }
+      console.log('Unlock process completed and checkboxes cleared.');
+    }
   }
 
   /**
@@ -208,6 +222,32 @@
     } catch (error) {
       console.error("Error:", error);
       return false;
+    }
+  }
+
+
+  /**
+   * Function to show or hide a spinner on an element
+   * @param {HTMLElement} element - The element to show or hide the spinner on
+   * @param {boolean} show - Whether to show or hide the spinner
+   */
+  function elementSpinner(element, show) {
+    let spinner = element.querySelector(".spinner");
+    let buttonText = element.querySelector(".button-text");
+
+    if (show) {
+      if (!spinner) {
+        spinner = document.createElement("div");
+        spinner.className = "spinner";
+        element.appendChild(spinner);
+      }
+      buttonText.style.visibility = "hidden";
+      spinner.classList.add("show");
+    } else {
+      if (spinner) {
+        spinner.classList.remove("show");
+      }
+      buttonText.style.visibility = "visible";
     }
   }
 
