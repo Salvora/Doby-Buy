@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Doby-Buy
 // @namespace   https://github.com/Salvora
-// @version     1.2.0
+// @version     1.2.1
 // @grant       GM_addStyle
 // @grant       GM_getResourceText
 // @grant       GM_setValue
@@ -146,6 +146,11 @@
   function addUnlockCheckedButton() {
     const bookmarkElement = document.querySelector(".serbookmark .bookmark");
     const followedElement = document.querySelector(".serbookmark .bmc");
+
+    if (document.getElementById("unlock-checked-button")) {
+      console.warn("Unlock Checked button already exists.");
+      return;
+    }
 
     if (!bookmarkElement) {
       console.warn("Bookmark element not found.");
