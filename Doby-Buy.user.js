@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Doby-Buy
 // @namespace   https://github.com/Salvora
-// @version     1.0.1
+// @version     1.2.0
 // @grant       GM_addStyle
 // @grant       GM_getResourceText
 // @grant       GM_setValue
@@ -19,12 +19,12 @@
 // ==/UserScript==
 
 (function () {
-  "use strict";
+  ("use strict");
   let isInitialized = false;
 
   // Apply custom CSS
   try {
-    GM_addStyle(GM_getResourceText('customCSS'));
+    GM_addStyle(GM_getResourceText("customCSS"));
     console.log("Custom CSS applied successfully.");
   } catch (e) {
     console.error("Failed to apply custom CSS:", e);
@@ -43,93 +43,152 @@
     return Promise.race([
       fetch(url, { ...fetchOptions, signal }),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timed out')), timeout)
-      )
+        setTimeout(() => reject(new Error("Request timed out")), timeout)
+      ),
     ]);
+  }
+
+  /**
+   * Debounces function calls to limit the rate at which a function can fire.
+   * @param {Function} func - The function to debounce.
+   * @param {number} wait - The debounce interval in milliseconds.
+   * @returns {Function} - The debounced function.
+   */
+  function debounce(func, wait) {
+    let timeout;
+    return (...args) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
   }
 
   /**
    * Finds premium chapters and adds checkboxes to them.
    * Clicking anywhere other than the title will toggle the checkbox.
    */
-  function findPremium() {
-    const chapterList = document.querySelector('.eplister.eplisterfull');
+  function findPremiumChapters() {
+    const chapterList = document.querySelector(".eplister.eplisterfull");
+
     if (!chapterList) {
       console.warn("Chapter list not found.");
       return;
     }
 
-    const coinElements = chapterList.querySelectorAll('li:has(.premium-icon)');
-    console.log(`Found ${coinElements.length} coin elements`);
+    const premiumChapters = chapterList.querySelectorAll(
+      "li:has(.premium-icon)"
+    );
+    console.log(`Found ${premiumChapters.length} premium chapters`);
 
-    coinElements.forEach(item => {
-      // Check if checkbox already exists
-      if (item.querySelector('.premium-checkbox')) return;
+    premiumChapters.forEach((chapter) => {
+      // Avoid adding multiple checkboxes to the same chapter
+      if (chapter.querySelector(".premium-checkbox")) return;
 
-      const eplNum = item.querySelector('.epl-num');
-      const eplTitle = item.querySelector('.epl-title');
-      const link = item.querySelector('a');
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.className = 'premium-checkbox';
+      const chapterNumberElement = chapter.querySelector(".epl-num");
+      const chapterTitleElement = chapter.querySelector(".epl-title");
+      const chapterLink = chapter.querySelector("a");
 
-      eplNum.parentNode.insertBefore(checkbox, eplNum.nextSibling);
+      // Ensure essential elements exist
+      if (!chapterNumberElement || !chapterTitleElement || !chapterLink) {
+        console.warn(
+          "Essential chapter elements missing. Skipping this chapter."
+        );
+        return;
+      }
+
+      // Create and insert the checkbox
+      const checkbox = createCheckbox();
+      chapterNumberElement.parentNode.insertBefore(
+        checkbox,
+        chapterNumberElement.nextSibling
+      );
 
       // Prevent default link behavior when clicking outside the title
-      link.addEventListener('click', (e) => {
-        if (!eplTitle.contains(e.target)) {
-          e.preventDefault();
+      chapterLink.addEventListener("click", (event) => {
+        if (!chapterTitleElement.contains(event.target)) {
+          event.preventDefault();
         }
       });
 
-      // Add event listener for checkbox toggle
-      item.addEventListener('click', (event) => {
-        if (!eplTitle.contains(event.target) && event.target !== checkbox) {
-          checkbox.checked = !checkbox.checked;
+      // Toggle checkbox when clicking outside the title and checkbox
+      chapter.addEventListener("click", (event) => {
+        if (
+          !chapterTitleElement.contains(event.target) &&
+          event.target !== checkbox
+        ) {
+          toggleCheckbox(checkbox);
         }
       });
     });
   }
 
   /**
+   * Creates a checkbox element with the class 'premium-checkbox'.
+   * @returns {HTMLInputElement} The created checkbox element.
+   */
+  function createCheckbox() {
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "premium-checkbox";
+    return checkbox;
+  }
+
+  /**
+   * Toggles the checked state of a checkbox.
+   * @param {HTMLInputElement} checkbox - The checkbox to toggle.
+   */
+  function toggleCheckbox(checkbox) {
+    checkbox.checked = !checkbox.checked;
+  }
+
+  /**
    * Adds the "Unlock Checked" button next to the "Bookmarked" button.
    */
-  function unlockCheckedButton() {
-    const bookmarkElement = document.querySelector('.serbookmark .bookmark');
-    const followedElement = document.querySelector('.serbookmark .bmc');
+  function addUnlockCheckedButton() {
+    const bookmarkElement = document.querySelector(".serbookmark .bookmark");
+    const followedElement = document.querySelector(".serbookmark .bmc");
 
     if (!bookmarkElement) {
       console.warn("Bookmark element not found.");
       return;
     }
 
-      const buttonContainer = document.createElement('div');
-      buttonContainer.className = 'button-container';
+    const buttonContainer = document.createElement("div");
+    buttonContainer.className = "button-container";
 
-      const bookmarkWrapper = document.createElement('div');
-      bookmarkWrapper.className = 'bookmark-wrapper';
+    const bookmarkWrapper = document.createElement("div");
+    bookmarkWrapper.className = "bookmark-wrapper";
 
-      const unlockButton = document.createElement('div');
-      unlockButton.className = 'bookmark';
-      unlockButton.id = 'unlock-checked-button';
-      unlockButton.innerHTML = '<i class="fas fa-unlock" aria-hidden="true"></i> <span class="button-text">Unlock Checked</span>';
-      unlockButton.addEventListener("click", async () => {
-        unlockButton.classList.add('click-animation');
-        setTimeout(() => {
-          unlockButton.classList.remove('click-animation');
-        }, 200);
-        await unlockChecked();
-      });
+    const unlockButton = document.createElement("div");
+    unlockButton.className = "bookmark";
+    unlockButton.id = "unlock-checked-button";
+    const icon = document.createElement("i");
+    icon.className = "fas fa-unlock";
+    icon.setAttribute("aria-hidden", "true");
 
-      bookmarkElement.parentNode.insertBefore(buttonContainer, bookmarkElement);
-      bookmarkWrapper.appendChild(bookmarkElement);
-      if (followedElement) {
-        bookmarkWrapper.appendChild(followedElement);
-      }
-      buttonContainer.appendChild(bookmarkWrapper);
-      buttonContainer.appendChild(unlockButton);
-      console.log("Unlock Checked button added to the DOM.");
+    const span = document.createElement("span");
+    span.className = "button-text";
+    span.textContent = "Unlock Checked";
 
+    unlockButton.textContent = ""; // Clear any existing content
+    unlockButton.appendChild(icon);
+    unlockButton.appendChild(document.createTextNode(" ")); // Add space between icon and text
+    unlockButton.appendChild(span);
+    unlockButton.addEventListener("click", async () => {
+      unlockButton.classList.add("click-animation");
+      setTimeout(() => {
+        unlockButton.classList.remove("click-animation");
+      }, 200);
+      await unlockChecked();
+    });
+
+    bookmarkElement.parentNode.insertBefore(buttonContainer, bookmarkElement);
+    bookmarkWrapper.appendChild(bookmarkElement);
+    if (followedElement) {
+      bookmarkWrapper.appendChild(followedElement);
+    }
+    buttonContainer.appendChild(bookmarkWrapper);
+    buttonContainer.appendChild(unlockButton);
+    console.log("Unlock Checked button added to the DOM.");
   }
 
   /**
@@ -140,20 +199,20 @@
     try {
       const token = await findToken();
       if (!token) {
-        console.error('Token not found.');
+        console.error("Token not found.");
         return;
       }
 
-      checkedBoxes = document.querySelectorAll('.premium-checkbox:checked');
+      checkedBoxes = document.querySelectorAll(".premium-checkbox:checked");
       if (checkedBoxes.length === 0) {
-        console.log('No chapters selected.');
+        console.log("No chapters selected.");
         return;
       }
 
-      const unlockPromises = Array.from(checkedBoxes).map(async checkbox => {
-        const chapterItem = checkbox.closest('li');
-        const postID = chapterItem.getAttribute('data-id');
-        const chapterLink = chapterItem.querySelector('a').href;
+      const unlockPromises = Array.from(checkedBoxes).map(async (checkbox) => {
+        const chapterItem = checkbox.closest("li");
+        const postID = chapterItem.getAttribute("data-id");
+        const chapterLink = chapterItem.querySelector("a").href;
 
         console.log(`Unlocking chapter ${postID}...`);
         const success = await unlockChapter(chapterLink, token, postID);
@@ -165,17 +224,17 @@
       });
 
       await Promise.all(unlockPromises);
-      console.log('All unlock requests have been processed.');
+      console.log("All unlock requests have been processed.");
     } catch (error) {
-      console.error('An error occurred during the unlock process:', error);
+      console.error("An error occurred during the unlock process:", error);
     } finally {
       // Uncheck all checkboxes
       if (checkedBoxes) {
-        checkedBoxes.forEach(checkbox => {
+        checkedBoxes.forEach((checkbox) => {
           checkbox.checked = false;
         });
       }
-      console.log('Unlock process completed and checkboxes cleared.');
+      console.log("Unlock process completed and checkboxes cleared.");
     }
   }
 
@@ -225,7 +284,6 @@
     }
   }
 
-
   /**
    * Function to show or hide a spinner on an element
    * @param {HTMLElement} element - The element to show or hide the spinner on
@@ -256,39 +314,43 @@
    * @returns {Promise<string|null>} - A promise that resolves to the token if found, otherwise null.
    */
   async function findToken() {
-    const chapterList = document.querySelector('.eplister.eplisterfull');
+    const chapterList = document.querySelector(".eplister.eplisterfull");
     if (!chapterList) {
-      console.error('Chapter list not found.');
+      console.error("Chapter list not found.");
       return null;
-    }    
-    const premiumChapters = chapterList.querySelectorAll('li:has(.premium-icon)');
+    }
+    const premiumChapters = chapterList.querySelectorAll(
+      "li:has(.premium-icon)"
+    );
 
     if (premiumChapters.length === 0) {
-      console.error('No premium chapters found.');
+      console.error("No premium chapters found.");
       return null;
     }
 
-    const randomChapter = premiumChapters[Math.floor(Math.random() * premiumChapters.length)];
-    const chapterLink = randomChapter.querySelector('a').href;
+    const randomChapter =
+      premiumChapters[Math.floor(Math.random() * premiumChapters.length)];
+    const chapterLink = randomChapter.querySelector("a").href;
 
     try {
       const response = await fetch(chapterLink);
       const text = await response.text();
 
-      const tokenMatch = text.match(/var myCREDBuyContent = \{"ajaxurl":"[^"]+","token":"([^"]+)"/);
+      const tokenMatch = text.match(
+        /var myCREDBuyContent = \{"ajaxurl":"[^"]+","token":"([^"]+)"/
+      );
       if (tokenMatch && tokenMatch[1]) {
-        console.log('Token found:', tokenMatch[1]);
+        console.log("Token found:", tokenMatch[1]);
         return tokenMatch[1];
       } else {
-        console.error('Token not found in the response.');
+        console.error("Token not found in the response.");
         return null;
       }
     } catch (error) {
-      console.error('Error fetching the chapter:', error);
+      console.error("Error fetching the chapter:", error);
       return null;
     }
   }
-
 
   /**
    * Debounces function calls
@@ -305,28 +367,28 @@
    * Removes existing elements to prevent duplicates
    */
   function cleanup() {
-    document.querySelectorAll('.premium-checkbox').forEach(el => el.remove());
-    document.querySelectorAll('.button-container').forEach(el => el.remove());
+    document.querySelectorAll(".premium-checkbox").forEach((el) => el.remove());
+    document.querySelectorAll(".button-container").forEach((el) => el.remove());
   }
 
   /**
-   * Observes DOM changes for dynamic content
+   * Observes DOM changes to handle dynamic content loading.
+   * Re-initializes the script upon detecting relevant changes.
    */
   function observeDOMChanges() {
     const observer = new MutationObserver(
       debounce((mutations) => {
-        // Check if relevant nodes were added/removed
-        const hasRelevantChanges = mutations.some(mutation => {
-          return Array.from(mutation.addedNodes).some(node => 
-            node.nodeType === 1 && (
-              node.matches('.eplister.eplisterfull') ||
-              node.matches('.serbookmark')
-            )
-          );
-        });
+        const relevantChanges = mutations.some((mutation) =>
+          Array.from(mutation.addedNodes).some(
+            (node) =>
+              node.nodeType === 1 &&
+              (node.matches(".eplister.eplisterfull") ||
+                node.matches(".serbookmark"))
+          )
+        );
 
-        if (hasRelevantChanges) {
-          isInitialized = false;
+        if (relevantChanges) {
+          console.log("Relevant DOM changes detected. Re-initializing script.");
           cleanup();
           init();
         }
@@ -335,21 +397,23 @@
 
     observer.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
+
+    console.log("MutationObserver initialized to watch for DOM changes.");
   }
 
-  /**
-   * Initializes the script
-   */
   function init() {
-    if (isInitialized) return;
-    
-    findPremium();
-    unlockCheckedButton();
-    isInitialized = true;
-  }
+    if (isInitialized) {
+      console.warn("Script is already initialized.");
+      return;
+    }
 
+    findPremiumChapters();
+    addUnlockCheckedButton();
+    isInitialized = true;
+    console.log("Script initialization completed.");
+  }
 
   // Initialize script and observe changes
   init();
