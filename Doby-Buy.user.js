@@ -83,11 +83,9 @@
       if (chapter.querySelector(".premium-checkbox")) return;
 
       const chapterNumberElement = chapter.querySelector(".epl-num");
-      const chapterTitleElement = chapter.querySelector(".epl-title");
-      const chapterLink = chapter.querySelector("a");
 
       // Ensure essential elements exist
-      if (!chapterNumberElement || !chapterTitleElement || !chapterLink) {
+      if (!chapterNumberElement) {
         console.warn(
           "Essential chapter elements missing. Skipping this chapter."
         );
@@ -100,16 +98,29 @@
         checkbox,
         chapterNumberElement.nextSibling
       );
+    });
 
-      // Prevent default link behavior when clicking outside the title
-      chapterLink.addEventListener("click", (event) => {
-        if (!chapterTitleElement.contains(event.target)) {
+    // Attach a single event listener using Event Delegation
+    if (!chapterList.dataset.dobybuyListener) {
+      chapterList.addEventListener("click", (event) => {
+        const chapter = event.target.closest("li:has(.premium-icon)");
+        if (!chapter) return;
+
+        const chapterTitleElement = chapter.querySelector(".epl-title");
+        const checkbox = chapter.querySelector(".premium-checkbox");
+        const chapterLink = chapter.querySelector("a");
+
+        if (!chapterTitleElement || !checkbox || !chapterLink) return;
+
+        // Prevent default link behavior when clicking outside the title
+        if (
+          chapterLink.contains(event.target) &&
+          !chapterTitleElement.contains(event.target)
+        ) {
           event.preventDefault();
         }
-      });
 
-      // Toggle checkbox when clicking outside the title and checkbox
-      chapter.addEventListener("click", (event) => {
+        // Toggle checkbox when clicking outside the title and checkbox
         if (
           !chapterTitleElement.contains(event.target) &&
           event.target !== checkbox
@@ -117,7 +128,10 @@
           toggleCheckbox(checkbox);
         }
       });
-    });
+
+      // Mark as listener added
+      chapterList.dataset.dobybuyListener = "true";
+    }
   }
 
   async function checkChapterLockStatus(chapterList) {
@@ -189,6 +203,7 @@
     unlockButton.appendChild(icon);
     unlockButton.appendChild(document.createTextNode(" ")); // Add space between icon and text
     unlockButton.appendChild(span);
+
     unlockButton.addEventListener("click", async () => {
       unlockButton.classList.add("click-animation");
       setTimeout(() => {
@@ -353,8 +368,9 @@
       const text = await response.text();
 
       const tokenMatch = text.match(
-        /var myCREDBuyContent = \{"ajaxurl":"[^"]+","token":"([^"]+)"/
+        /var\s+myCREDBuyContent\s*=\s*\{[^}]*"token"\s*:\s*"([^"]+)"/
       );
+
       if (tokenMatch && tokenMatch[1]) {
         console.log("Token found:", tokenMatch[1]);
         return tokenMatch[1];
