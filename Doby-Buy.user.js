@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Doby-Buy
 // @namespace   https://github.com/Salvora
-// @version     1.2.1
+// @version     1.2.2
 // @grant       GM_addStyle
 // @grant       GM_getResourceText
 // @grant       GM_setValue
