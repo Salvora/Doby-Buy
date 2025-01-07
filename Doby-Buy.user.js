@@ -25,7 +25,6 @@
   // Apply custom CSS
   try {
     GM_addStyle(GM_getResourceText("customCSS"));
-    console.log("Custom CSS applied successfully.");
   } catch (e) {
     console.error("Failed to apply custom CSS:", e);
   }
@@ -119,6 +118,18 @@
         }
       });
     });
+  }
+
+  async function checkChapterLockStatus(chapterList) {
+    const lockIdentifierId = "mycred-buy-content";
+  }
+
+  function isLoggedIn() {
+    const loginDiv = document.querySelector(".wpd-login");
+    if (loginDiv && loginDiv.innerHTML.includes("You are logged in as")) {
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -414,13 +425,18 @@
       return;
     }
 
+    if (!isLoggedIn()) {
+      console.warn("Not logged in. Skipping Doby-Buy script initialization.");
+      return;
+    }
+
     findPremiumChapters();
     addUnlockCheckedButton();
+    observeDOMChanges(); // Moved observeDOMChanges into init
     isInitialized = true;
     console.log("Script initialization completed.");
   }
 
-  // Initialize script and observe changes
+  // Initialize script
   init();
-  observeDOMChanges();
 })();
